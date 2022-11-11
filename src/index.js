@@ -1,85 +1,73 @@
 import './css/styles.css';
 import fetchCountries from './fetchcountries';
 import { Notify } from 'notiflix';
-import _ from 'lodash';
-
+import { debounce } from 'lodash';
 
 const DEBOUNCE_DELAY = 300;
 const input = document.querySelector('input#search-box');
 const countryList = document.querySelector('.country-list');
 const countryInfo = document.querySelector('.country-info');
 const body = document.querySelector('body');
-body.style.backgroundColor = '#C4A484';
-const URLINFO = 'https://en.wikipedia.org/wiki/';
 
-function fetch(e) {
-  e.preventDefault();
-  return fetchCountries(input.value.trim())
-    .then(country => {
-      if (
-        countryInfo.childNodes.length > 0 ||
-        countryList.childNodes.length > 0
-      ) {
-        clearMarkup();
-      }
-      if (input.value.length === 0) {
-        return;
-      }
-      if (country.message === 'Page Not Found') {
+input.style.cssText +=
+  'font-size:16px; border-style:outset; border-width:3px; border-radius:0px; border-color:#30bf8f; padding:10px; font-family:serif; font-weight:normal; font-style:none; box-shadow: 10px 9px 7px 0px rgba(64,97,72,.70);';
+body.style.cssText +=
+  'background-color: #8EC5FC; background-image: linear-gradient(62deg, #8EC5FC 0%, #E0C3FC 100%);';
+
+function fetch(country) {
+  clearOutput();
+  if (country.target.value.trim() != '') {
+    fetchCountries(country.target.value.trim())
+      .then(countriesMarkup)
+      .catch(error => {
         Notify.failure('Oops, there is no country with that name');
-      }
-      if (country.length === 1) {
-        singleMarkup(country);
-      }
-      if (country.length > 1 && country.length <= 10) {
-        renderMarkups(country);
-      }
-      if (country.length > 10) {
-        Notify.failure(
-          'Too many matches found. Please enter a more specific name.'
-        );
-      }
-    })
-    .catch(error => {
-      console.log(error.message);
-    });
-}
-
-function clearMarkup() {
-  if (countryList.length !== 0 || countryInfo.length !== 0) {
-    countryInfo.innerHTML = '';
-    countryList.innerHTML = '';
+      });
   }
 }
 
-function singleMarkup(response) {
-  const key = Object.keys(response[0].languages);
-  countryInfo.insertAdjacentHTML(
-    'afterbegin',
-    `<li style="list-style: none;">
-             <div style="display: flex;"><a href="${
-               URLINFO + response[0].name.common
-             }"><img src="${response[0].flags.svg}" width="60" height="60"></a>
-               <h1>${response[0].name.common} </h1></div>
-             <div style="display:flex;"><h2>Capital: </h2><p class="data-details" style="font-size: 21px; font-weight: 500; padding-top: 2px; padding-left: 12px;">${
-               response[0].capital
-             }</p></div>
-               <div style="display:flex;"><h2>Population: </h2><p class="data-details" style="font-size: 21px; font-weight: 500; padding-top: 2px; padding-left: 12px;">${
-                 response[0].population
-               } </p></div>
-           <div style="display:flex;"><h2>Languages: </h2><p class="data-details" style="font-size: 21px; font-weight: 500; padding-top: 2px; padding-left: 12px;">${key}</p></div>
-           </li>`
-  );
+function clearOutput() {
+  countryInfo.innerHTML = '';
+  countryList.innerHTML = '';
 }
 
-function renderMarkups(response) {
-  response.forEach(response => {
-    countryList.insertAdjacentHTML(
-      'afterbegin',
-      `<ul style="list-style:none;"><li style="font-size: 30px; font-weight: 700; display: flex; align-content: cener;"><a href="https://en.wikipedia.org/wiki/${response.name.common}" ><img style="width:40px; height: 40px;"src="${response.flags.svg}"></a>${response.name.official}</li>
-          <li style="display: flex;"><h2>Capital: </h2><p style="font-size: 21px; font-weight: 500; padding-top: 2px; padding-left: 12px;">${response.capital}</p></li>`
-    );
-  });
+function countriesMarkup(country) {
+  if (country.length > 10) {
+    Notify.info('Too many matches found. Please enter a more specific name.');
+  } else if (country.length >= 2 && country.length <= 10) {
+    countriesList(country);
+  } else if (country.length === 1) {
+    countryShow(country);
+  }
 }
 
-input.addEventListener('input', _(fetch, DEBOUNCE_DELAY));
+function countriesList(list) {
+  const markup = list
+    .map(({ flags, name }) => {
+      return `<li>
+          <img src="${flags.svg}" width="100px">
+          <p>${name.official}</p>
+          </li>`;
+    })
+    .join('');
+  countryList.insertAdjacentHTML('beforeend', markup);
+}
+
+function countryShow(response) {
+  const markup = response
+    .map(el => {
+      return `<div><img class="img" src="${el.flags.svg}" width=100 alt="flag">
+          <h1>${el.name.official}</h1></div>
+          <ul>
+          <li ><span >Capital:
+            </span>${el.capital}</li>
+          <li ><span>Population:
+            </span>${el.population}</li>
+          <li ><span>Languages:
+            </span>${Object.values(el.languages)}</li>
+        </ul>`;
+    })
+    .join('');
+  countryInfo.insertAdjacentHTML('beforeend', markup);
+}
+
+input.addEventListener('input', debounce(fetch, DEBOUNCE_DELAY));
