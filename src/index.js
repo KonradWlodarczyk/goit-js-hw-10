@@ -18,13 +18,9 @@ function fetch(country) {
   clearOutput();
   if (country.target.value.trim() != '') {
     fetchCountries(country.target.value.trim())
-      .then(response => {
-        if (!response.ok)
-          Notify.failure('Oops, there is no country with that name');
-      })
       .then(countriesMarkup)
       .catch(error => {
-        console.log('We have a problem here...', error);
+        Notify.failure('Oops, there is no country with that name', error);
       });
   }
 }
@@ -41,6 +37,8 @@ function countriesMarkup(country) {
     countriesList(country);
   } else if (country.length === 1) {
     countryShow(country);
+  } else if (!response.ok) {
+    Notify.failure('Oops, there is no country with that name');
   }
 }
 
