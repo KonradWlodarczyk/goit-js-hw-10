@@ -18,9 +18,13 @@ function fetch(country) {
   clearOutput();
   if (country.target.value.trim() != '') {
     fetchCountries(country.target.value.trim())
+      .then(response => {
+        if (!response.ok)
+          Notify.failure('Oops, there is no country with that name');
+      })
       .then(countriesMarkup)
       .catch(error => {
-        Notify.failure('Oops, there is no country with that name');
+        console.log('We have a problem here...', error);
       });
   }
 }
